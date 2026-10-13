@@ -1,0 +1,9 @@
+Package: cpu-manager
+Version: 1.1.1
+Section: utils
+Priority: optional
+Architecture: all
+Maintainer: CPU Manager Project
+Depends: python3, python3-pyside6.qtwidgets, python3-psutil, pkexec
+Description: CPU and process monitor for Raspberry Pi and Linux (admin launcher)
+ PySide6 desktop application with configurable sampling, RAM/swap/load and CPU hardware information.

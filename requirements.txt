@@ -1,0 +1,2 @@
+# Runtime dependencies are installed from Raspberry Pi OS / Debian packages.
+# sudo apt install python3-pyside6.qtwidgets python3-psutil
