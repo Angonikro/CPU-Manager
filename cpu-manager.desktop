@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=CPU Manager
+Comment=CPU and process monitor
+Exec=sudo /usr/bin/cpu-manager
+Icon=utilities-system-monitor
+Terminal=false
+Type=Application
+Categories=System;Monitor;

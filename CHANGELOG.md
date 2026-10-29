@@ -1,6 +1,28 @@
 # Changelog
 
-## 1.1.1 ADMIN — 2026-10-13
+## 1.1.5
+- Startet bei aktivierter Tray-Option verborgen im System-Tray.
+- Desktop-Datei nutzt `Exec=sudo /usr/bin/cpu-manager`.
+
+## 1.1.4
+- Tray-Einstellung bleibt beim Beenden über das Tray-Menü erhalten.
+- Beenden schließt die Anwendung, ohne die gespeicherte Auswahl zu deaktivieren.
+- CPU-Auslastungsanzeige und GTK-3-Tray-Verfahren unverändert.
+
+## 1.1.3
+- Tray-Symbol zeigt CPU-Chip und aktuelle Auslastung als Prozentwert.
+- Tray-Anzeige wird zusammen mit der CPU-Messung aktualisiert; Warnfarbe ab 80 % und Tooltip mit Live-Wert.
+- Bestehende GTK-3-`Gtk.StatusIcon`-Tray-Methode und übrige CPU-Manager-Funktionen beibehalten.
+
+# Changelog
+
+## 1.1.2
+- Added optional GTK 3 system-tray icon using the same `Gtk.StatusIcon` method as LunaKalender.
+- Left-click toggles the main window; right-click opens the show/quit menu.
+- Closing the window hides it to the tray when tray mode is enabled.
+- Added GTK 3 Python bindings as Debian package dependencies.
+
+1.1.1 ADMIN — 2026-10-13
 - Die Auswahl „Systemdienste anzeigen“ wird dauerhaft gespeichert und beim nächsten Start wiederhergestellt.
 - Die zuletzt gewählte Hell-/Dunkel-Darstellung bleibt erhalten.
 - GitHub-Paket bereinigt: generierte Python-Cache-Dateien und alte/unnötige Release-Artefakte entfernt.

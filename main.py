@@ -10,7 +10,10 @@ def main():
     app.setOrganizationName("CPU Manager")
     app.setStyle("Fusion")
     window = MainWindow()
-    window.show()
+    # If the user enabled the tray, start hidden only when the tray was
+    # successfully initialized. Otherwise keep the window visible as a fallback.
+    if not (window.tray_enabled and window.tray_icon is not None):
+        window.show()
     sys.exit(app.exec())
 
 if __name__ == "__main__":
