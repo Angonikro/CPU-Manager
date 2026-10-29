@@ -2,6 +2,10 @@
 
 CPU Manager ist ein grafischer Systemmonitor für Raspberry Pi und andere Debian-/Linux-Systeme. Er zeigt die Auslastung der CPU-Kerne, Arbeitsspeicher und laufende Prozesse an. Die Anwendung startet ohne Passwortabfrage und läuft mit den Rechten des angemeldeten Benutzers.
 
+![Sprachassistent](cpu-manager.png)
+
+[Github Seite](https://github.com/Angonikro/CPU-Manager/)
+
 ## Funktionen
 
 - Live-Anzeige der Gesamt-CPU-Auslastung und der einzelnen CPU-Kerne
