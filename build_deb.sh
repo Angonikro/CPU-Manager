@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")"
-VERSION="1.1.5"
+VERSION="1.1.6"
 ROOT="$(mktemp -d)"
 trap 'rm -rf "$ROOT"' EXIT
 mkdir -p "$ROOT/DEBIAN" "$ROOT/usr/bin" "$ROOT/usr/share/applications" "$ROOT/usr/share/cpu-manager/cpu_manager" "$ROOT/etc/sudoers.d"
@@ -12,9 +12,9 @@ Section: utils
 Priority: optional
 Architecture: all
 Maintainer: CPU Manager Project
-Depends: sudo, python3, python3-pyside6.qtwidgets, python3-psutil, python3-gi, gir1.2-gtk-3.0
-Description: CPU and process monitor for Raspberry Pi and Linux with GTK tray icon
- PySide6 desktop application with configurable sampling, RAM/swap/load, CPU hardware information and GTK system tray.
+Depends: sudo, python3, python3-pyside6.qtwidgets, python3-psutil
+Description: CPU and process monitor for Raspberry Pi and Linux with native Qt tray icon
+ PySide6 desktop application with configurable sampling, RAM/swap/load, CPU hardware information and native Qt system tray.
 CONTROL
 cat > "$ROOT/usr/bin/cpu-manager" <<'LAUNCH'
 #!/bin/sh

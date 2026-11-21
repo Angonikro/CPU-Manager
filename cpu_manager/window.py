@@ -3,7 +3,8 @@ import os
 import subprocess
 import sys
 from PySide6.QtCore import Qt, QTimer, QSettings, QObject, Signal
-from PySide6.QtGui import QAction, QColor
+from PySide6.QtGui import QAction, QColor, QIcon, QPixmap
+from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar,
     QGridLayout, QTableWidget, QTableWidgetItem, QHeaderView, QLineEdit,
@@ -11,7 +12,6 @@ from PySide6.QtWidgets import (
 )
 from .monitor import Monitor
 from .actions import terminate_process, kill_process, restart_process, process_details, is_root
-import threading
 import struct
 import zlib
 
@@ -20,9 +20,7 @@ class _TrayBridge(QObject):
     action = Signal(str)
 
 
-# Tiny dependency-free PNG renderer for a tray icon that remains readable on
-# panels without requiring Pillow or Cairo. The tray itself still uses GTK 3
-# Gtk.StatusIcon, matching LunaKalender's GTK tray approach.
+# Dependency-free PNG renderer for the native Qt system tray icon.
 _GLYPHS = {
     "0": ("01110","10001","10011","10101","11001","10001","01110"),
     "1": ("00100","01100","00100","00100","00100","00100","01110"),
@@ -38,45 +36,56 @@ _GLYPHS = {
 }
 
 def _tray_png(percent):
-    width, height = 64, 32
-    bg = (36, 48, 61, 255)
-    accent = (244, 83, 76, 255) if percent >= 80 else (105, 220, 153, 255)
-    pixels = [[bg for _ in range(width)] for _ in range(height)]
+    """Render the final slightly larger, bold CPU percentage for XFCE panels."""
+    width, height = 96, 48
+    transparent = (0, 0, 0, 0)
+    pixels = [[transparent for _ in range(width)] for _ in range(height)]
+    accent = (255, 82, 82, 255) if percent >= 80 else (112, 238, 166, 255)
+
     def rect(x0, y0, x1, y1, color):
-        for yy in range(max(0,y0), min(height,y1)):
-            for xx in range(max(0,x0), min(width,x1)):
-                pixels[yy][xx] = color
-    # CPU/chip outline and pins
-    rect(3, 8, 21, 24, accent); rect(6, 11, 18, 21, bg)
-    for x in (6, 11, 16):
-        rect(x, 4, x+2, 8, accent); rect(x, 24, x+2, 28, accent)
-    for y in (10, 15, 20):
-        rect(0, y, 3, y+2, accent); rect(21, y, 24, y+2, accent)
-    label = f"{max(0,min(100,int(round(percent))))}%"
-    scale = 2 if len(label) <= 3 else 1
-    char_w, char_h, spacing = 5*scale, 7*scale, 2*scale
-    total_w = len(label)*char_w + (len(label)-1)*spacing
-    xstart = max(25, 62-total_w)
-    ystart = (height-char_h)//2
+        for yy in range(max(0, y0), min(height, y1)):
+            for xx in range(max(0, x1)):
+                if xx >= max(0, x0):
+                    pixels[yy][xx] = color
+
+    label = f"{max(0, min(100, int(round(percent))))}%"
+    scale = 4 if len(label) == 4 else 6
+    char_w, char_h = 5 * scale, 7 * scale
+    total_w = len(label) * char_w
+    xstart = (width - total_w) // 2
+    ystart = (height - char_h) // 2
+
     for ci, char in enumerate(label):
         glyph = _GLYPHS.get(char)
-        if not glyph: continue
+        if glyph is None:
+            continue
         for gy, line in enumerate(glyph):
             for gx, bit in enumerate(line):
                 if bit == "1":
-                    rect(xstart+ci*(char_w+spacing)+gx*scale, ystart+gy*scale,
-                         xstart+ci*(char_w+spacing)+(gx+1)*scale, ystart+(gy+1)*scale, accent)
-    raw = b"".join(b"\x00" + bytes(channel for pixel in row for channel in pixel) for row in pixels)
+                    x = xstart + ci * char_w + gx * scale
+                    y = ystart + gy * scale
+                    rect(x, y, x + scale + 1, y + scale + 1, accent)
+
+    raw = b"".join(
+        b"\x00" + bytes(channel for pixel in row for channel in pixel)
+        for row in pixels
+    )
+
     def chunk(kind, data):
-        return struct.pack(">I",len(data))+kind+data+struct.pack(">I",zlib.crc32(kind+data)&0xffffffff)
-    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR",struct.pack(">IIBBBBB",width,height,8,6,0,0,0))
-            + chunk(b"IDAT",zlib.compress(raw,9)) + chunk(b"IEND",b""))
+        return (struct.pack(">I", len(data)) + kind + data
+                + struct.pack(">I", zlib.crc32(kind + data) & 0xffffffff))
+
+    return (b"\x89PNG\r\n\x1a\n"
+            + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(raw, 9))
+            + chunk(b"IEND", b""))
+
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("CPU Manager 1.1.5 – Raspberry Pi")
+        self.setWindowTitle("CPU Manager 1.1.6 – Raspberry Pi")
         self.resize(1180, 760)
         self.monitor = Monitor()
         self.settings = QSettings("CPUManager", "CPUManagerADMIN")
@@ -84,13 +93,6 @@ class MainWindow(QMainWindow):
         self.tray_enabled = self.settings.value("tray_enabled", False, type=bool)
         self.tray_icon = None
         self._really_quit = False
-        self._gtk = None
-        self._glib = None
-        self._tray_thread = None
-        self._tray_ready = None
-        self._tray_error = None
-        self._tray_bridge = _TrayBridge(self)
-        self._tray_bridge.action.connect(self._handle_tray_action)
         self._build_ui()
         if self.tray_enabled:
             self._start_tray()
@@ -108,7 +110,7 @@ class MainWindow(QMainWindow):
         root.setSpacing(10)
 
         top = QHBoxLayout()
-        title = QLabel("CPU Manager 1.1.5")
+        title = QLabel("CPU Manager 1.1.6")
         title.setStyleSheet("font-size: 23px; font-weight: 700;")
         self.root_badge = QLabel("Administrator" if is_root() else "Benutzerrechte")
         self.root_badge.setStyleSheet("padding: 5px 10px; border-radius: 8px; background: #e6f4ea; color: #176534;" if is_root() else "padding: 5px 10px; border-radius: 8px; background: #fff4d6; color: #785600;")
@@ -243,85 +245,59 @@ class MainWindow(QMainWindow):
     def _start_tray(self):
         if self.tray_icon is not None:
             return True
-        try:
-            import gi
-            gi.require_version("Gtk", "3.0")
-            from gi.repository import Gtk, GLib
-            self._gtk, self._glib = Gtk, GLib
-            self._tray_ready = threading.Event()
-
-            def run_gtk_tray():
-                try:
-                    icon = Gtk.StatusIcon()
-                    icon.set_title("CPU Manager")
-                    icon.set_tooltip_text("CPU Manager – CPU: wird gemessen")
-                    self._set_tray_visual(icon, 0.0)
-                    icon.connect("activate", lambda *_args: self._tray_bridge.action.emit("toggle"))
-                    menu = Gtk.Menu()
-                    show_item = Gtk.MenuItem(label="CPU Manager anzeigen")
-                    show_item.connect("activate", lambda *_args: self._tray_bridge.action.emit("show"))
-                    menu.append(show_item)
-                    quit_item = Gtk.MenuItem(label="Beenden")
-                    quit_item.connect("activate", lambda *_args: self._tray_bridge.action.emit("quit"))
-                    menu.append(quit_item)
-                    menu.show_all()
-                    icon.connect(
-                        "popup-menu",
-                        lambda _icon, button, activate_time: menu.popup(
-                            None, None, Gtk.StatusIcon.position_menu, icon, button, activate_time
-                        ),
-                    )
-                    self.tray_icon = icon
-                    self._tray_menu = menu
-                    self._tray_ready.set()
-                    Gtk.main()
-                except Exception as exc:
-                    self._tray_error = str(exc)
-                    self._tray_ready.set()
-
-            self._tray_error = None
-            self._tray_thread = threading.Thread(
-                target=run_gtk_tray, daemon=True, name="CPU-Manager-GTK-Tray"
-            )
-            self._tray_thread.start()
-            self._tray_ready.wait(timeout=3)
-            if self._tray_error:
-                raise RuntimeError(self._tray_error)
-            if self.tray_icon is None:
-                raise RuntimeError("GTK-Tray konnte nicht initialisiert werden")
-            return True
-        except (ImportError, RuntimeError) as exc:
+        if not QSystemTrayIcon.isSystemTrayAvailable():
             QMessageBox.warning(
-                self,
-                "Infobereichssymbol nicht verfügbar",
-                "Das Tray-Symbol benötigt GTK 3 mit Python-Bindings "
-                "(python3-gi und gir1.2-gtk-3.0).\\n\\n" + str(exc),
+                self, "Infobereichssymbol nicht verfügbar",
+                "Die Desktop-Umgebung stellt momentan kein System-Tray bereit."
             )
             return False
+        try:
+            self.tray_icon = QSystemTrayIcon(self)
+            self.tray_icon.setToolTip("CPU Manager – CPU: wird gemessen")
+            self._tray_menu = QMenu(self)
+            show_action = QAction("CPU Manager anzeigen", self._tray_menu)
+            show_action.triggered.connect(lambda: self._handle_tray_action("show"))
+            self._tray_menu.addAction(show_action)
+            self._tray_menu.addSeparator()
+            quit_action = QAction("Beenden", self._tray_menu)
+            quit_action.triggered.connect(lambda: self._handle_tray_action("quit"))
+            self._tray_menu.addAction(quit_action)
+            self.tray_icon.setContextMenu(self._tray_menu)
+            self.tray_icon.activated.connect(self._on_tray_activated)
+            self._set_tray_visual(0.0)
+            self.tray_icon.show()
+            return True
+        except Exception as exc:
+            if self.tray_icon is not None:
+                self.tray_icon.hide()
+                self.tray_icon.deleteLater()
+                self.tray_icon = None
+            QMessageBox.warning(self, "Infobereichssymbol nicht verfügbar", str(exc))
+            return False
 
-    def _set_tray_visual(self, icon, percent):
-        """Set the GTK tray icon to CPU chip + live percentage and tooltip."""
-        if self._gtk is None:
+    def _on_tray_activated(self, reason):
+        if reason in (QSystemTrayIcon.ActivationReason.Trigger,
+                      QSystemTrayIcon.ActivationReason.DoubleClick):
+            self._handle_tray_action("toggle")
+
+    def _set_tray_visual(self, percent):
+        """Render the CPU chip and live percentage into the native Qt tray icon."""
+        if self.tray_icon is None:
             return
         try:
-            from gi.repository import GdkPixbuf
-            loader = GdkPixbuf.PixbufLoader.new_with_type("png")
-            loader.write(_tray_png(percent))
-            loader.close()
-            icon.set_from_pixbuf(loader.get_pixbuf())
-            icon.set_tooltip_text(f"CPU Manager – CPU-Auslastung: {percent:.0f}%" + (" (hohe Last)" if percent >= 80 else ""))
+            pixmap = QPixmap()
+            if pixmap.loadFromData(_tray_png(float(percent)), "PNG"):
+                self.tray_icon.setIcon(QIcon(pixmap))
+            self.tray_icon.setToolTip(
+                f"CPU Manager – CPU-Auslastung: {percent:.0f}%"
+                + (" (hohe Last)" if percent >= 80 else "")
+            )
         except Exception:
-            # Preserve a working tray icon even if a desktop's pixbuf backend
-            # does not accept the generated image.
-            try:
-                icon.set_tooltip_text(f"CPU Manager – CPU-Auslastung: {percent:.0f}%")
-            except Exception:
-                pass
+            self.tray_icon.setToolTip(f"CPU Manager – CPU-Auslastung: {percent:.0f}%")
 
     def _update_tray_cpu(self, percent):
-        if self.tray_enabled and self.tray_icon is not None and self._glib is not None:
-            icon = self.tray_icon
-            self._glib.idle_add(self._set_tray_visual, icon, float(percent))
+        if self.tray_enabled and self.tray_icon is not None:
+            self._set_tray_visual(float(percent))
 
     def _handle_tray_action(self, action):
         if action == "show":
@@ -345,16 +321,13 @@ class MainWindow(QMainWindow):
     def _stop_tray(self):
         icon = self.tray_icon
         self.tray_icon = None
-        if icon is not None and self._glib is not None:
-            try:
-                self._glib.idle_add(icon.set_visible, False)
-            except Exception:
-                pass
-        if self._gtk is not None and self._glib is not None:
-            try:
-                self._glib.idle_add(self._gtk.main_quit)
-            except Exception:
-                pass
+        if icon is not None:
+            icon.hide()
+            icon.deleteLater()
+        menu = getattr(self, "_tray_menu", None)
+        if menu is not None:
+            menu.deleteLater()
+            self._tray_menu = None
 
     def closeEvent(self, event):
         if not self._really_quit and self.tray_enabled and self.tray_icon is not None:

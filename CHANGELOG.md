@@ -1,3 +1,9 @@
+## 1.1.6 – Native Qt-System-Tray
+- GTK-3-StatusIcon und GTK-Hintergrundthread durch Qt `QSystemTrayIcon` ersetzt.
+- CPU-Chip-Symbol mit Live-Prozentwert, Warnfarbe ab 80 %, Tooltip und Tray-Menü bleiben erhalten.
+- GTK-3-Python-Bindings aus den Paketabhängigkeiten entfernt.
+- Versionsnummer bewusst bei 1.1.6 belassen.
+
 # Changelog
 
 ## 1.1.5

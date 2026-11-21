@@ -1,10 +1,6 @@
-# CPU Manager 1.1.5
+# CPU Manager 1.1.6
 
 CPU Manager ist ein grafischer Systemmonitor für Raspberry Pi und andere Debian-/Linux-Systeme. Er zeigt die Auslastung der CPU-Kerne, Arbeitsspeicher und laufende Prozesse an. Die Anwendung startet ohne Passwortabfrage und läuft mit den Rechten des angemeldeten Benutzers.
-
-![Sprachassistent](cpu-manager.png)
-
-[Github Seite](https://github.com/Angonikro/CPU-Manager/)
 
 ## Funktionen
 
@@ -18,7 +14,7 @@ CPU Manager ist ein grafischer Systemmonitor für Raspberry Pi und andere Debian
 - Gespeicherte Einstellungen für Messintervall, Hell-/Dunkelmodus, Anzeige der Systemdienste und Infobereichssymbol (Tray)
 - Prozessdetails einschließlich Programmdatei, Kommandozeile und erlaubter CPU-Affinität
 - Verwaltungsaktionen wie Prozess beenden und – sofern eindeutig zuordenbar – einen systemd-Dienst neu starten
-- System-Tray wie in LunaKalender über GTK 3 `Gtk.StatusIcon`: CPU-Chip-Symbol mit Live-Prozentwert, Aktualisierung beim Messintervall und Warnfarbe ab 80 %; Tooltip zeigt die aktuelle CPU-Auslastung. Linksklick blendet das Fenster ein/aus, Rechtsklick öffnet „CPU Manager anzeigen“ und „Beenden“
+- Native Qt-System-Tray-Integration über `QSystemTrayIcon` (wie in LunaWetter): CPU-Chip-Symbol mit Live-Prozentwert, Aktualisierung beim Messintervall und Warnfarbe ab 80 %; Tooltip zeigt die aktuelle CPU-Auslastung. Linksklick blendet das Fenster ein/aus, Rechtsklick öffnet „CPU Manager anzeigen“ und „Beenden“
 - Optionales Infobereichssymbol; bei aktiviertem Tray blendet das Schließen-Kreuz das Fenster nur aus
 - Start über das Anwendungsmenü ohne zusätzliches Terminal; Start ohne Passwortabfrage; Verwaltungsaktionen sind durch die Rechte des angemeldeten Benutzers begrenzt
 
@@ -28,16 +24,16 @@ CPU Manager ist ein grafischer Systemmonitor für Raspberry Pi und andere Debian
 - Python 3
 - PySide6 Qt Widgets (`python3-pyside6.qtwidgets`)
 - psutil (`python3-psutil`)
-- GTK 3 Python-Bindings (`python3-gi`, `gir1.2-gtk-3.0`) für das System-Tray
+- Qt-System-Tray über PySide6; keine GTK-3-Tray-Abhängigkeit
 
 Eine virtuelle Python-Umgebung und `pip` sind für die Debian-Installation nicht erforderlich.
 
 ## Installation (empfohlen): Debian-Paket
 
-Lade `cpu-manager_1.1.5_all.deb` aus den Release-Dateien herunter und installiere es im Verzeichnis, in dem die Datei liegt:
+Lade `cpu-manager_1.1.6_all.deb` aus den Release-Dateien herunter und installiere es im Verzeichnis, in dem die Datei liegt:
 
 ```bash
-sudo apt install ./cpu-manager_1.1.5_all.deb
+sudo apt install ./cpu-manager_1.1.6_all.deb
 ```
 
 Danach kannst du **CPU Manager** über das Anwendungsmenü starten. Der Menüeintrag öffnet kein zusätzliches Terminal. Die App startet ohne Passwortabfrage mit den Rechten deines angemeldeten Benutzers. Aktionen an fremden Prozessen oder Systemdiensten können daher vom System abgelehnt werden.
@@ -84,7 +80,7 @@ Wenn **„Systemdienste anzeigen“** ausgeschaltet ist, blendet CPU Manager erk
 
   ```bash
   sudo apt update
-  sudo apt install python3 python3-pyside6.qtwidgets python3-psutil python3-gi gir1.2-gtk-3.0
+  sudo apt install python3 python3-pyside6.qtwidgets python3-psutil
   ```
 
 **Ein Paketname wird nicht gefunden:**
@@ -101,7 +97,7 @@ apt-cache search pyside6
 - `build_deb.sh` – reproduzierbarer Bau des Debian-Pakets
 - `start_cpu_manager.sh` – Startskript
 - - `CHANGELOG.md` – Versionshistorie
-- `RELEASE_NOTES_v1.1.5.md` – Hinweise zum Release 1.1.5
+- `RELEASE_NOTES_v1.1.6.md` – Hinweise zum Release 1.1.6
 - `LICENSE` – Lizenzinformationen
 
 ## Lizenz
