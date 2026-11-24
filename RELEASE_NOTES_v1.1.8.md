@@ -1,4 +1,4 @@
-# CPU Manager 1.1.8
+# CPU Manager 1.1.9
 
 ## Vollständige deutsche Oberflächenbeschriftung
 - Schaltflächen in kleinen Bestätigungsfenstern heißen zuverlässig „Ja“ und „Nein“.

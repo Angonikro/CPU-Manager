@@ -1,9 +1,12 @@
+# Changelog
+
+## 1.1.8 - Englisch hinzugefügt 
+- Die App ist jetzt zweisprachig deutsch und englisch.
+
 ## 1.1.8 – Deutsche Oberfläche
 - Bestätigungsfenster verwenden ausdrücklich die Schaltflächen „Ja“ und „Nein“, auch ohne deutsche Qt-Sprachpakete.
 - Englische sichtbare Beschriftungen und Prozessstatus ins Deutsche übersetzt.
 - Hintergrundaktionen aus 1.1.7 beibehalten.
-
-# Changelog
 
 ## 1.1.7 – Prozessaktionen im Hintergrund
 - Beenden, Sofort beenden und systemd-Neustart werden in eigenen Qt-Hintergrundthreads ausgeführt.
@@ -77,3 +80,9 @@
 ## 1.0.2 ADMIN
 - Systemdienste ein- und ausblendbar.
 - Grafische Administratorfreigabe über PolicyKit.
+
+## 1.1.9 – Deutsch/Englisch
+- Sprachwahl Deutsch/English direkt in der Oberfläche ergänzt.
+- Spracheinstellung wird gespeichert und beim nächsten Start wiederhergestellt.
+- Bestätigungsfenster verwenden passend zur gewählten Sprache „Ja/Nein“ bzw. „Yes/No“.
+- Hintergrundaktionen bleiben unverändert asynchron.

@@ -1,4 +1,4 @@
-# CPU Manager 1.1.8
+# CPU Manager 1.1.9
 
 CPU Manager ist ein grafischer Systemmonitor für Raspberry Pi und andere Debian-/Linux-Systeme. Er zeigt die Auslastung der CPU-Kerne, Arbeitsspeicher und laufende Prozesse an. Die Anwendung startet ohne Passwortabfrage und läuft mit den Rechten des angemeldeten Benutzers.
 
@@ -31,10 +31,10 @@ Eine virtuelle Python-Umgebung und `pip` sind für die Debian-Installation nicht
 
 ## Installation (empfohlen): Debian-Paket
 
-Lade `cpu-manager_1.1.8_all.deb` aus den Release-Dateien herunter und installiere es im Verzeichnis, in dem die Datei liegt:
+Lade `cpu-manager_1.1.9_all.deb` aus den Release-Dateien herunter und installiere es im Verzeichnis, in dem die Datei liegt:
 
 ```bash
-sudo apt install ./cpu-manager_1.1.8_all.deb
+sudo apt install ./cpu-manager_1.1.9_all.deb
 ```
 
 Danach kannst du **CPU Manager** über das Anwendungsmenü starten. Der Menüeintrag öffnet kein zusätzliches Terminal. Die App startet ohne Passwortabfrage mit den Rechten deines angemeldeten Benutzers. Aktionen an fremden Prozessen oder Systemdiensten können daher vom System abgelehnt werden.
@@ -98,7 +98,7 @@ apt-cache search pyside6
 - `build_deb.sh` – reproduzierbarer Bau des Debian-Pakets
 - `start_cpu_manager.sh` – Startskript
 - - `CHANGELOG.md` – Versionshistorie
-- `RELEASE_NOTES_v1.1.8.md` – Hinweise zum Release 1.1.8
+- `RELEASE_NOTES_v1.1.9.md` – Hinweise zum Release 1.1.9
 - `LICENSE` – Lizenzinformationen
 
 ## Lizenz
