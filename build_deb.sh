@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")"
-VERSION="1.1.6"
+VERSION="1.1.7"
 ROOT="$(mktemp -d)"
 trap 'rm -rf "$ROOT"' EXIT
 mkdir -p "$ROOT/DEBIAN" "$ROOT/usr/bin" "$ROOT/usr/share/applications" "$ROOT/usr/share/cpu-manager/cpu_manager" "$ROOT/etc/sudoers.d"

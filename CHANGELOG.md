@@ -1,10 +1,16 @@
+# Changelog
+
+## 1.1.7 – Prozessaktionen im Hintergrund
+- Beenden, Sofort beenden und systemd-Neustart werden in eigenen Qt-Hintergrundthreads ausgeführt.
+- Die Oberfläche bleibt während laufender Prozessaktionen reaktionsfähig; Status und Fehlermeldungen erscheinen nach Abschluss.
+- Aktionsschaltflächen werden während einer laufenden Verwaltungsaktion gegen doppelte Aufrufe gesperrt.
+- Bestehende Prozessschutz- und Berechtigungslogik bleibt erhalten.
+
 ## 1.1.6 – Native Qt-System-Tray
 - GTK-3-StatusIcon und GTK-Hintergrundthread durch Qt `QSystemTrayIcon` ersetzt.
 - CPU-Chip-Symbol mit Live-Prozentwert, Warnfarbe ab 80 %, Tooltip und Tray-Menü bleiben erhalten.
 - GTK-3-Python-Bindings aus den Paketabhängigkeiten entfernt.
 - Versionsnummer bewusst bei 1.1.6 belassen.
-
-# Changelog
 
 ## 1.1.5
 - Startet bei aktivierter Tray-Option verborgen im System-Tray.

@@ -2,7 +2,7 @@ import psutil
 import os
 import subprocess
 import sys
-from PySide6.QtCore import Qt, QTimer, QSettings, QObject, Signal
+from PySide6.QtCore import Qt, QTimer, QSettings, QObject, Signal, QThread
 from PySide6.QtGui import QAction, QColor, QIcon, QPixmap
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 from PySide6.QtWidgets import (
@@ -18,6 +18,23 @@ import zlib
 
 class _TrayBridge(QObject):
     action = Signal(str)
+
+
+class _ProcessActionThread(QThread):
+    """Run potentially slow process operations without blocking the Qt UI."""
+    succeeded = Signal(object)
+    failed = Signal(str)
+
+    def __init__(self, operation, parent=None):
+        super().__init__(parent)
+        self.operation = operation
+
+    def run(self):
+        try:
+            result = self.operation()
+            self.succeeded.emit(result)
+        except Exception as exc:
+            self.failed.emit(str(exc))
 
 
 # Dependency-free PNG renderer for the native Qt system tray icon.
@@ -85,11 +102,13 @@ def _tray_png(percent):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("CPU Manager 1.1.6 – Raspberry Pi")
+        self.setWindowTitle("CPU Manager 1.1.7 – Raspberry Pi")
         self.resize(1180, 760)
         self.monitor = Monitor()
         self.settings = QSettings("CPUManager", "CPUManagerADMIN")
         self._rows_by_pid = {}
+        self._action_threads = set()
+        self._action_running = False
         self.tray_enabled = self.settings.value("tray_enabled", False, type=bool)
         self.tray_icon = None
         self._really_quit = False
@@ -110,7 +129,7 @@ class MainWindow(QMainWindow):
         root.setSpacing(10)
 
         top = QHBoxLayout()
-        title = QLabel("CPU Manager 1.1.6")
+        title = QLabel("CPU Manager 1.1.7")
         title.setStyleSheet("font-size: 23px; font-weight: 700;")
         self.root_badge = QLabel("Administrator" if is_root() else "Benutzerrechte")
         self.root_badge.setStyleSheet("padding: 5px 10px; border-radius: 8px; background: #e6f4ea; color: #176534;" if is_root() else "padding: 5px 10px; border-radius: 8px; background: #fff4d6; color: #785600;")
@@ -388,8 +407,10 @@ class MainWindow(QMainWindow):
         self.table.viewport().update()
 
     def _set_action_enabled(self, enabled):
-        for b in [self.details_btn, self.stop_btn, self.kill_btn, self.restart_btn]:
-            b.setEnabled(enabled)
+        self.details_btn.setEnabled(enabled)
+        actions_enabled = enabled and not self._action_running
+        for b in (self.stop_btn, self.kill_btn, self.restart_btn):
+            b.setEnabled(actions_enabled)
 
     def selected_pid(self):
         selected = self.table.selectionModel().selectedRows()
@@ -543,9 +564,44 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             QMessageBox.warning(self, "Details nicht verfügbar", str(exc))
 
+    def _run_process_action(self, label, operation, success_message=None):
+        """Execute a process action on a worker thread and report back on the UI thread."""
+        if self._action_running:
+            return
+        self._action_running = True
+        for button in (self.stop_btn, self.kill_btn, self.restart_btn):
+            button.setEnabled(False)
+        self.status_label.setText(f"{label} läuft im Hintergrund …")
+        worker = _ProcessActionThread(operation, self)
+        self._action_threads.add(worker)
+        worker.succeeded.connect(lambda result, w=worker: self._process_action_succeeded(w, label, result, success_message))
+        worker.failed.connect(lambda error, w=worker: self._process_action_failed(w, label, error))
+        worker.finished.connect(lambda w=worker: self._process_action_finished(w))
+        worker.finished.connect(worker.deleteLater)
+        worker.start()
+
+    def _process_action_succeeded(self, worker, label, result, success_message):
+        if success_message:
+            message = success_message(result)
+            QMessageBox.information(self, "Aktion abgeschlossen", message)
+        else:
+            self.status_label.setText(f"{label} erfolgreich ausgeführt")
+        self.refresh()
+
+    def _process_action_failed(self, worker, label, error):
+        QMessageBox.warning(self, f"{label} fehlgeschlagen", error)
+        self.status_label.setText(f"{label} fehlgeschlagen")
+        self.refresh()
+
+    def _process_action_finished(self, worker):
+        self._action_threads.discard(worker)
+        self._action_running = False
+        self.selection_changed()
+
     def stop_selected(self):
         pid = self.selected_pid()
-        if pid is None: return
+        if pid is None:
+            return
         row = self._rows_by_pid.get(pid)
         name = row.name if row else str(pid)
         if pid <= 1:
@@ -553,17 +609,12 @@ class MainWindow(QMainWindow):
             return
         if not self._confirm("Prozess beenden?", f"An {name} (PID {pid}) wird ein normales Beendigungssignal gesendet.\nNicht gespeicherte Daten können verloren gehen.\n\nFortfahren?"):
             return
-        try:
-            terminate_process(pid)
-            self.status_label.setText(f"Beendigung an PID {pid} gesendet")
-            self._permission_hint()
-        except Exception as exc:
-            QMessageBox.warning(self, "Beenden fehlgeschlagen", str(exc))
-        self.refresh()
+        self._run_process_action("Beenden", lambda: terminate_process(pid))
 
     def kill_selected(self):
         pid = self.selected_pid()
-        if pid is None: return
+        if pid is None:
+            return
         row = self._rows_by_pid.get(pid)
         name = row.name if row else str(pid)
         if pid <= 1:
@@ -571,17 +622,12 @@ class MainWindow(QMainWindow):
             return
         if not self._confirm("Sofort beenden?", f"{name} (PID {pid}) wird ohne reguläre Aufräumphase beendet.\nDas kann Datenverlust verursachen.\n\nWirklich fortfahren?"):
             return
-        try:
-            kill_process(pid)
-            self.status_label.setText(f"Sofortiges Beenden an PID {pid} gesendet")
-            self._permission_hint()
-        except Exception as exc:
-            QMessageBox.warning(self, "Sofort beenden fehlgeschlagen", str(exc))
-        self.refresh()
+        self._run_process_action("Sofort beenden", lambda: kill_process(pid))
 
     def restart_selected(self):
         pid = self.selected_pid()
-        if pid is None: return
+        if pid is None:
+            return
         row = self._rows_by_pid.get(pid)
         name = row.name if row else str(pid)
         if pid <= 1:
@@ -589,9 +635,9 @@ class MainWindow(QMainWindow):
             return
         if not self._confirm("Systemdienst neu starten?", f"Es wird versucht, die systemd-Service-Unit zu ermitteln, zu der {name} (PID {pid}) gehört.\nFalls keine eindeutige Unit gefunden wird, passiert nichts. Der Dienst kann andere Programme kurz unterbrechen.\n\nFortfahren?"):
             return
-        try:
-            unit = restart_process(pid)
-            QMessageBox.information(self, "Neustart angefordert", f"systemd hat den Neustart für {unit} angenommen.")
-        except Exception as exc:
-            QMessageBox.warning(self, "Neustart nicht möglich", str(exc) + ("\n\nFür Systemdienste sind gegebenenfalls Administratorrechte erforderlich." if not is_root() else ""))
-        self.refresh()
+        self._run_process_action(
+            "Dienst neu starten",
+            lambda: restart_process(pid),
+            lambda unit: f"systemd hat den Neustart für {unit} angenommen."
+        )
+

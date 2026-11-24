@@ -1,4 +1,4 @@
-# CPU Manager 1.1.6
+# CPU Manager 1.1.7
 
 CPU Manager ist ein grafischer Systemmonitor für Raspberry Pi und andere Debian-/Linux-Systeme. Er zeigt die Auslastung der CPU-Kerne, Arbeitsspeicher und laufende Prozesse an. Die Anwendung startet ohne Passwortabfrage und läuft mit den Rechten des angemeldeten Benutzers.
 
@@ -13,6 +13,7 @@ CPU Manager ist ein grafischer Systemmonitor für Raspberry Pi und andere Debian
 - Einstellbares Messintervall: **1, 2, 5, 10 oder 30 Sekunden**
 - Gespeicherte Einstellungen für Messintervall, Hell-/Dunkelmodus, Anzeige der Systemdienste und Infobereichssymbol (Tray)
 - Prozessdetails einschließlich Programmdatei, Kommandozeile und erlaubter CPU-Affinität
+- Prozessaktionen (Beenden, Sofort beenden und Dienst-Neustart) laufen in Hintergrund-Threads; die Oberfläche bleibt währenddessen bedienbar
 - Verwaltungsaktionen wie Prozess beenden und – sofern eindeutig zuordenbar – einen systemd-Dienst neu starten
 - Native Qt-System-Tray-Integration über `QSystemTrayIcon` (wie in LunaWetter): CPU-Chip-Symbol mit Live-Prozentwert, Aktualisierung beim Messintervall und Warnfarbe ab 80 %; Tooltip zeigt die aktuelle CPU-Auslastung. Linksklick blendet das Fenster ein/aus, Rechtsklick öffnet „CPU Manager anzeigen“ und „Beenden“
 - Optionales Infobereichssymbol; bei aktiviertem Tray blendet das Schließen-Kreuz das Fenster nur aus
@@ -30,10 +31,10 @@ Eine virtuelle Python-Umgebung und `pip` sind für die Debian-Installation nicht
 
 ## Installation (empfohlen): Debian-Paket
 
-Lade `cpu-manager_1.1.6_all.deb` aus den Release-Dateien herunter und installiere es im Verzeichnis, in dem die Datei liegt:
+Lade `cpu-manager_1.1.7_all.deb` aus den Release-Dateien herunter und installiere es im Verzeichnis, in dem die Datei liegt:
 
 ```bash
-sudo apt install ./cpu-manager_1.1.6_all.deb
+sudo apt install ./cpu-manager_1.1.7_all.deb
 ```
 
 Danach kannst du **CPU Manager** über das Anwendungsmenü starten. Der Menüeintrag öffnet kein zusätzliches Terminal. Die App startet ohne Passwortabfrage mit den Rechten deines angemeldeten Benutzers. Aktionen an fremden Prozessen oder Systemdiensten können daher vom System abgelehnt werden.
@@ -97,7 +98,7 @@ apt-cache search pyside6
 - `build_deb.sh` – reproduzierbarer Bau des Debian-Pakets
 - `start_cpu_manager.sh` – Startskript
 - - `CHANGELOG.md` – Versionshistorie
-- `RELEASE_NOTES_v1.1.6.md` – Hinweise zum Release 1.1.6
+- `RELEASE_NOTES_v1.1.7.md` – Hinweise zum Release 1.1.7
 - `LICENSE` – Lizenzinformationen
 
 ## Lizenz
