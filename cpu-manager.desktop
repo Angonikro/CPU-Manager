@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=CPU Manager
-Comment=CPU and process monitor
+Comment=CPU- und Prozessüberwachung
 Exec=sudo /usr/bin/cpu-manager
 Icon=utilities-system-monitor
 Terminal=false

@@ -1,9 +1,9 @@
 Package: cpu-manager
-Version: 1.1.7
+Version: 1.1.8
 Section: utils
 Priority: optional
 Architecture: all
 Maintainer: CPU Manager Project
 Depends: python3, python3-pyside6.qtwidgets, python3-psutil
-Description: CPU and process monitor for Raspberry Pi and Linux with native Qt tray icon
- PySide6 desktop application with configurable sampling, RAM/swap/load and CPU hardware information.
+Description: CPU- und Prozessüberwachung für Raspberry Pi und Linux mit Qt-Infobereich
+ PySide6-Anwendung mit einstellbarem Messintervall, Arbeitsspeicher, Auslagerung, Systemlast und CPU-Hardwareinformationen.

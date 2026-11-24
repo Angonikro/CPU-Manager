@@ -1,3 +1,8 @@
+## 1.1.8 – Deutsche Oberfläche
+- Bestätigungsfenster verwenden ausdrücklich die Schaltflächen „Ja“ und „Nein“, auch ohne deutsche Qt-Sprachpakete.
+- Englische sichtbare Beschriftungen und Prozessstatus ins Deutsche übersetzt.
+- Hintergrundaktionen aus 1.1.7 beibehalten.
+
 # Changelog
 
 ## 1.1.7 – Prozessaktionen im Hintergrund
@@ -42,11 +47,11 @@
 
 ## 1.1.0 ADMIN
 - Messintervall (1/2/5/10/30 Sekunden) auswählbar und dauerhaft gespeichert.
-- Übersicht zeigt zusätzlich Swap-Auslastung und Load Average für 1, 5 und 15 Minuten.
-- CPU-Informationen, Prozessfilter, Sortierung, Dark Mode und Administratorstart beibehalten.
+- Übersicht zeigt zusätzlich Swap-Auslastung und Systemlast für 1, 5 und 15 Minuten.
+- CPU-Informationen, Prozessfilter, Sortierung, dunkles Erscheinungsbild und Administratorstart beibehalten.
 
 ## 1.0.9 ADMIN
-- CPU-Informationsbereich mit Modell, Architektur, physischen/logischen Kernen, Takt, Temperatur und Governor.
+- CPU-Informationsbereich mit Modell, Architektur, physischen/logischen Kernen, Takt, Temperatur und Taktregler.
 - Raspberry-Pi-Drosselungs-/Unterspannungsstatus über `vcgencmd get_throttled`, sofern verfügbar.
 
 ## 1.0.8 ADMIN
@@ -54,7 +59,7 @@
 - CPU-Kern-Panel vergrößert und Filtererkennung für typische Kernel-Worker erweitert.
 
 ## 1.0.7 ADMIN
-- Dark Mode mit kontrastreichen Tabellenfarben.
+- dunkles Erscheinungsbild mit kontrastreichen Tabellenfarben.
 - Erkennung typischer Desktop-/Benutzer-Hintergrunddienste erweitert.
 
 ## 1.0.6 ADMIN

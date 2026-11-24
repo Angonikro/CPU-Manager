@@ -102,7 +102,7 @@ def _tray_png(percent):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("CPU Manager 1.1.7 – Raspberry Pi")
+        self.setWindowTitle("CPU Manager 1.1.8 – Raspberry Pi")
         self.resize(1180, 760)
         self.monitor = Monitor()
         self.settings = QSettings("CPUManager", "CPUManagerADMIN")
@@ -129,9 +129,9 @@ class MainWindow(QMainWindow):
         root.setSpacing(10)
 
         top = QHBoxLayout()
-        title = QLabel("CPU Manager 1.1.7")
+        title = QLabel("CPU Manager 1.1.8")
         title.setStyleSheet("font-size: 23px; font-weight: 700;")
-        self.root_badge = QLabel("Administrator" if is_root() else "Benutzerrechte")
+        self.root_badge = QLabel("Administratorrechte" if is_root() else "Benutzerrechte")
         self.root_badge.setStyleSheet("padding: 5px 10px; border-radius: 8px; background: #e6f4ea; color: #176534;" if is_root() else "padding: 5px 10px; border-radius: 8px; background: #fff4d6; color: #785600;")
         self.status_label = QLabel("Initialisiere …")
         top.addWidget(title)
@@ -183,7 +183,7 @@ class MainWindow(QMainWindow):
         saved_show_services = self.settings.value("show_system_services", False, type=bool)
         self.services_toggle.setChecked(saved_show_services)
         self.services_toggle.toggled.connect(self.change_services_visibility)
-        self.dark_toggle = QCheckBox("Dark Mode")
+        self.dark_toggle = QCheckBox("Dunkles Erscheinungsbild")
         self.dark_toggle.toggled.connect(self.apply_theme)
         controls.addWidget(self.search, 1)
         controls.addWidget(QLabel("Sortierung:"))
@@ -194,7 +194,7 @@ class MainWindow(QMainWindow):
 
         splitter = QSplitter(Qt.Orientation.Vertical)
         self.table = QTableWidget(0, 7)
-        self.table.setHorizontalHeaderLabels(["PID", "Prozess", "Benutzer", "CPU %", "RAM MB", "Status", "Threads"])
+        self.table.setHorizontalHeaderLabels(["PID", "Prozess", "Benutzer", "CPU %", "Arbeitsspeicher (MB)", "Status", "Ausführungsfäden"])
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -218,7 +218,7 @@ class MainWindow(QMainWindow):
         self.restart_btn = QPushButton("Dienst neu starten")
         self.refresh_btn = QPushButton("Jetzt aktualisieren")
         self.tray_toggle = QCheckBox("Infobereichssymbol")
-        self.tray_toggle.setToolTip("CPU Manager im System-Tray anzeigen; Schließen blendet das Fenster dann nur aus.")
+        self.tray_toggle.setToolTip("CPU Manager im Infobereich anzeigen; Schließen blendet das Fenster dann nur aus.")
         self.tray_toggle.setChecked(self.tray_enabled)
         self.tray_toggle.toggled.connect(self._toggle_tray)
         self.details_btn.clicked.connect(self.show_details)
@@ -267,14 +267,14 @@ class MainWindow(QMainWindow):
         if not QSystemTrayIcon.isSystemTrayAvailable():
             QMessageBox.warning(
                 self, "Infobereichssymbol nicht verfügbar",
-                "Die Desktop-Umgebung stellt momentan kein System-Tray bereit."
+                "Die Desktop-Umgebung stellt momentan keinen Infobereich bereit."
             )
             return False
         try:
             self.tray_icon = QSystemTrayIcon(self)
-            self.tray_icon.setToolTip("CPU Manager – CPU: wird gemessen")
+            self.tray_icon.setToolTip("CPU Manager – CPU-Auslastung wird gemessen")
             self._tray_menu = QMenu(self)
-            show_action = QAction("CPU Manager anzeigen", self._tray_menu)
+            show_action = QAction("CPU Manager öffnen", self._tray_menu)
             show_action.triggered.connect(lambda: self._handle_tray_action("show"))
             self._tray_menu.addAction(show_action)
             self._tray_menu.addSeparator()
@@ -366,7 +366,7 @@ class MainWindow(QMainWindow):
         seconds = int(self.interval_box.currentData() or 2)
         self.settings.setValue("measurement_interval_ms", seconds * 1000)
         self.timer.setInterval(seconds * 1000)
-        self.status_label.setText(f"Live · Messintervall {seconds} s")
+        self.status_label.setText(f"Echtzeit · Messintervall {seconds} s")
 
     def apply_theme(self, dark=False):
         """Apply and persist the user's light/dark theme preference."""
@@ -428,7 +428,27 @@ class MainWindow(QMainWindow):
         if pid is not None:
             row = self._rows_by_pid.get(pid)
             if row:
-                self.details_label.setText(f"Ausgewählt: {row.name} (PID {pid}) · {row.user} · CPU {row.cpu:.1f}% · RAM {row.rss_mb:.1f} MB · {row.status}")
+                self.details_label.setText(f"Ausgewählt: {row.name} (PID {pid}) · {row.user} · CPU {row.cpu:.1f}% · RAM {row.rss_mb:.1f} MB · {self._translate_status(row.status)}")
+
+    @staticmethod
+    def _translate_status(status):
+        translations = {
+            "running": "läuft", "sleeping": "wartend", "disk-sleep": "Warten auf Datenträger",
+            "stopped": "angehalten", "tracing-stop": "Nachverfolgung angehalten",
+            "zombie": "Zombie", "dead": "beendet", "idle": "untätig",
+            "locked": "gesperrt", "waking": "wird aktiviert",
+        }
+        return translations.get(str(status).lower(), str(status))
+
+    @staticmethod
+    def _translate_governor(governor):
+        translations = {
+            "ondemand": "bedarfsgesteuert", "performance": "Höchstleistung",
+            "powersave": "Energiesparmodus", "schedutil": "dynamisch",
+            "conservative": "sparsam", "userspace": "benutzergesteuert",
+        }
+        value = str(governor)
+        return translations.get(value.lower(), value)
 
     def refresh(self):
         try:
@@ -446,7 +466,7 @@ class MainWindow(QMainWindow):
                 f"Modell: {info['model']}    Architektur: {info['arch']}    "
                 f"Kerne: {info['physical']} physisch / {info['logical']} logisch\n"
                 f"Takt: {info['current_mhz']} aktuell / {info['max_mhz']} maximal    "
-                f"Temperatur: {info['temperature']}    Governor: {info['governor']}\n"
+                f"Temperatur: {info['temperature']}    Taktregler: {self._translate_governor(info['governor'])}\n"
                 f"Takt-/Temperaturstatus: {info['throttling']}"
             )
         except Exception as exc:
@@ -454,15 +474,15 @@ class MainWindow(QMainWindow):
         swap = psutil.swap_memory()
         try:
             load = os.getloadavg()
-            load_text = f"Load: {load[0]:.2f} / {load[1]:.2f} / {load[2]:.2f}"
+            load_text = f"Systemlast (1/5/15 Min.): {load[0]:.2f} / {load[1]:.2f} / {load[2]:.2f}"
         except (AttributeError, OSError):
-            load_text = "Load: nicht verfügbar"
+            load_text = "Systemlast: nicht verfügbar"
         self.summary.setText(
-            f"Gesamt-CPU: {total:.1f}%    RAM: {vm.used / (1024**3):.2f} / {vm.total / (1024**3):.2f} GiB ({vm.percent:.1f}%)    "
-            f"Swap: {swap.used / (1024**3):.2f} / {swap.total / (1024**3):.2f} GiB ({swap.percent:.1f}%)    {load_text}    Prozesse: {len(rows)}"
+            f"Gesamt-CPU: {total:.1f}%    Arbeitsspeicher: {vm.used / (1024**3):.2f} / {vm.total / (1024**3):.2f} GiB ({vm.percent:.1f}%)    "
+            f"Auslagerung: {swap.used / (1024**3):.2f} / {swap.total / (1024**3):.2f} GiB ({swap.percent:.1f}%)    {load_text}    Prozesse: {len(rows)}"
         )
         self._update_tray_cpu(total)
-        self.status_label.setText(f"Live · Messintervall {self.interval_box.currentData()} s · {len(rows)} Prozesse")
+        self.status_label.setText(f"Echtzeit · Messintervall {self.interval_box.currentData()} s · {len(rows)} Prozesse")
         old_pid = self.selected_pid()
         sort = self.sort_box.currentIndex()
         if sort == 1:
@@ -481,7 +501,7 @@ class MainWindow(QMainWindow):
                 continue
             idx = self.table.rowCount()
             self.table.insertRow(idx)
-            vals = [str(r.pid), r.name, r.user, f"{r.cpu:.1f}", f"{r.rss_mb:.1f}", r.status, str(r.threads)]
+            vals = [str(r.pid), r.name, r.user, f"{r.cpu:.1f}", f"{r.rss_mb:.1f}", self._translate_status(r.status), str(r.threads)]
             for col, value in enumerate(vals):
                 item = QTableWidgetItem(value)
                 if col in (0,3,4,6):
@@ -543,7 +563,19 @@ class MainWindow(QMainWindow):
             self.table.setRowHidden(i, bool(query) and not any(query in v for v in values))
 
     def _confirm(self, title, message):
-        return QMessageBox.question(self, title, message, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes
+        # Schaltflächen ausdrücklich deutsch beschriften, unabhängig davon,
+        # ob die deutschen Qt-Übersetzungen auf dem System installiert sind.
+        dialog = QMessageBox(self)
+        dialog.setIcon(QMessageBox.Icon.Question)
+        dialog.setWindowTitle(title)
+        dialog.setText(message)
+        yes_button = dialog.addButton(QMessageBox.StandardButton.Yes)
+        no_button = dialog.addButton(QMessageBox.StandardButton.No)
+        yes_button.setText("Ja")
+        no_button.setText("Nein")
+        dialog.setDefaultButton(no_button)
+        dialog.exec()
+        return dialog.clickedButton() is yes_button
 
     def _permission_hint(self):
         if not is_root():
@@ -557,7 +589,7 @@ class MainWindow(QMainWindow):
             affinity = self.monitor.affinity(pid)
             cmd = " ".join(d["cmdline"]) or "(kein Kommandozeilentext verfügbar)"
             text = (f"PID: {d['pid']}\nName: {d['name']}\nBenutzer: {d['username']}\nStatus: {d['status']}\n"
-                    f"Eltern-PID: {d['ppid']}\nThreads: {self._rows_by_pid.get(pid).threads if pid in self._rows_by_pid else '?'}\n"
+                    f"Eltern-PID: {d['ppid']}\nAusführungsfäden: {self._rows_by_pid.get(pid).threads if pid in self._rows_by_pid else '?'}\n"
                     f"CPU-Affinität (erlaubte Kerne): {', '.join(map(str, affinity)) or 'nicht verfügbar'}\n"
                     f"Programm: {d['exe'] or 'nicht verfügbar'}\nBefehl: {cmd}")
             QMessageBox.information(self, f"Prozessdetails – PID {pid}", text)
@@ -633,7 +665,7 @@ class MainWindow(QMainWindow):
         if pid <= 1:
             QMessageBox.warning(self, "Geschützter Prozess", "PID 1 darf nicht neu gestartet werden.")
             return
-        if not self._confirm("Systemdienst neu starten?", f"Es wird versucht, die systemd-Service-Unit zu ermitteln, zu der {name} (PID {pid}) gehört.\nFalls keine eindeutige Unit gefunden wird, passiert nichts. Der Dienst kann andere Programme kurz unterbrechen.\n\nFortfahren?"):
+        if not self._confirm("Hintergrunddienst neu starten?", f"Es wird versucht, die zugehörige systemd-Diensteinheit für {name} (PID {pid}) zu ermitteln.\nFalls keine eindeutige Diensteinheit gefunden wird, passiert nichts. Der Dienst kann andere Programme kurz unterbrechen.\n\nFortfahren?"):
             return
         self._run_process_action(
             "Dienst neu starten",
